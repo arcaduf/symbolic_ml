@@ -44,6 +44,9 @@ def _get_args():
     parser.add_argument('-v', '--verbose', dest='verbose', action='store_true',
                         help='Enable verbose mode' )
     
+    parser.add_argument('-a', '--label', dest='label',
+                        help='Add label to output files' )
+    
     parser.add_argument('-p', '--print_vars', dest='print_vars', action='store_true',
                         help='Print names and unique values of features and outcome variables' )
 

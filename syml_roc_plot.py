@@ -53,9 +53,6 @@ def _get_args():
     
     parser.add_argument('-i', '--file_json', dest='file_json',
                         help='Specify input CSV file containing features and output variable')
-    
-    parser.add_argument('-o', '--path_out', dest='path_out', default=None,
-                        help='Specify output path')
 
     parser.add_argument('-h', '--help', dest='help', action='store_true',
                         help='Print example command line' )
@@ -87,11 +84,8 @@ def _get_args():
 def _get_data_from_json( file_json ):
     df_json = json.loads( open( file_json ).read() )
 
-    trues = [];  probs = []
-    
-    for i in range( 5 ):
-        trues.append( df_json[ 'Y_test_fold0' + str( i ) ] )
-        probs.append( df_json[ 'Y_score_fold0' + str( i ) ] )
+    trues = df_json[ 'y_true' ]
+    probs = df_json[ 'y_prob' ]
 
     n_arr = len( trues )
 
@@ -104,13 +98,13 @@ def _get_data_from_json( file_json ):
 # Plot separate ROCs
 # =============================================================================
 
-def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in , path_out=None ):
+def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in ):
     # Initialize figure
     fig = plt.figure()
-    string = 'Five-fold CV'
+    string = str( n_arr ) + '-fold CV'
     plt.title( string + ' separate ROCs' , fontsize=16 ,fontweight='bold' )
-    plt.xlabel( 'False-positive rate' , fontsize=16 )
-    plt.ylabel( 'True-positive rate' , fontsize=16 )
+    plt.xlabel( 'False Positive Rate' , fontsize=16 )
+    plt.ylabel( 'True Positive Rate' , fontsize=16 )
     plt.xticks( fontsize=14 );  plt.yticks( fontsize=14 )
 
 
@@ -125,9 +119,7 @@ def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in , path_ou
         # Get arrays
         y_score = np.array( probs[i] )
         y_true  = np.array( trues[i] )
-       
-        print( y_score )
-        print( len( y_score ) )
+        
         
         # Compute all metrics
         cmet._compute_metrics( y_true , y_score )
@@ -143,17 +135,17 @@ def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in , path_ou
     
         # Get Youden's point for fpr and tpr
         if len( cmet._fpr_best ) > 1:
-            cmet._fpr_best = fpr_best[0]
+            cmet._fpr_best = cmet._fpr_best[0]
 
         if len( cmet._tpr_best ) > 1:
-            cmet._tpr_best = tpr_best[0]
+            cmet._tpr_best = cmet._tpr_best[0]
 
 
         # Create label
         label = 'Fold n.' + str( i ) + \
-                ': AUC, ' + str( round( roc_auc , 2 ) ) + ';' \
-                ' 95%CI, ' + str( round( conf_int[1] , 2 ) ) + '-' + \
-                str( round( conf_int[0] , 2 ) )
+                ': AUC = ' + str( round( roc_auc , 2 ) ) + \
+                ' , 95%CI= [' + str( round( conf_int[1] , 2 ) ) + ',' + \
+                str( round( conf_int[0] , 2 ) ) + ']'
         
         
         # Plot ROC curve
@@ -163,12 +155,9 @@ def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in , path_ou
     # Save figure
     plt.tight_layout()
     plt.legend( fontsize=10 )
-       
-    if path_out is None:   
-        save_plot = file_in[:len( file_in )-5] + '_separate_roc_curve.png'
-    else:
-        save_plot = os.path.join( path_out , os.path.basename( file_in[:len( file_in )-5] ) + '_separate_roc_curve.png' )
-
+        
+    save_plot = file_in[:len( file_in )-5] + '_separate_roc_curve.png'
+        
     if '.svg' in save_plot:
         plt.savefig( save_plot , format='svg' , dpi=1200 )
     else:
@@ -181,7 +170,7 @@ def _plot_separate_roc_curves( trues , probs , n_arr  , cmet , file_in , path_ou
 # Plot composite ROC
 # =============================================================================
 
-def _plot_composite_roc_curve( trues , probs , n_arr  , cmet , file_in  , path_out=None ):
+def _plot_composite_roc_curve( trues , probs , n_arr  , cmet , file_in  ):
     from scipy import interp
     
     # Collect all TPR and FPR
@@ -234,10 +223,10 @@ def _plot_composite_roc_curve( trues , probs , n_arr  , cmet , file_in  , path_o
 
     # Initialize figure
     fig = plt.figure()
-    string = 'Five-fold CV'
+    string = str( n_arr ) + '-fold CV'
     plt.title( string + ' composite ROC' , fontsize=16 ,fontweight='bold' )
-    plt.xlabel( 'False-positive rate' , fontsize=16 )
-    plt.ylabel( 'True-positive rate' , fontsize=16 )
+    plt.xlabel( 'False Positive Rate' , fontsize=16 )
+    plt.ylabel( 'True Positive Rate' , fontsize=16 )
     plt.xticks( fontsize=14 );  plt.yticks( fontsize=14 )
 
 
@@ -252,9 +241,9 @@ def _plot_composite_roc_curve( trues , probs , n_arr  , cmet , file_in  , path_o
     sens_mean = np.mean( sens_list );  sens_std = np.std( sens_list )
     spec_mean = np.mean( spec_list );  spec_std = np.std( spec_list )
     
-    string = r'AUC, ' + str( round( auc_mean , 2 ) ) + ' $\pm$ ' + str( round( auc_std , 2 ) ) + '\n' + \
-              'SENS, ' + str( round( sens_mean , 2 ) ) + ' $\pm$ ' + str( round( sens_std , 2 ) ) + '\n' + \
-              'SPEC, ' + str( round( spec_mean , 2 ) ) + ' $\pm$ ' + str( round( spec_std , 2 ) )            
+    string = 'AUC  = ' + str( round( auc_mean , 2 ) ) + ' +/- ' + str( round( auc_std , 2 ) ) + '\n' + \
+             'SENS = ' + str( round( sens_mean , 2 ) ) + ' +/- ' + str( round( sens_std , 2 ) ) + '\n' + \
+             'SPEC = ' + str( round( spec_mean , 2 ) ) + ' +/- ' + str( round( spec_std , 2 ) )            
     
     plt.text( 0.60 , 
               0.20 , 
@@ -271,18 +260,15 @@ def _plot_composite_roc_curve( trues , probs , n_arr  , cmet , file_in  , path_o
     
     # Color area between min and max ROC
     plt.fill_between( mean_fpr , tprs_lower , tprs_upper , color='grey' , alpha=.35 ,
-                      label=r'$\pm$ 1 SD' )
+                      label=r'$\pm$ 1 std. dev.' )
           
     
     # Save figure
     plt.tight_layout()
     plt.legend( fontsize=10 )
     
-    if path_out is None:   
-        save_plot = file_in[:len( file_in )-5] + '_composite_roc_curve.png'
-    else:
-        save_plot = os.path.join( path_out , os.path.basename( file_in[:len( file_in )-5] ) + '_composite_roc_curve.png' )
-
+    save_plot = file_in[:len( file_in )-5:] + '_composite_roc_curve.png'
+        
     if '.svg' in save_plot:
         plt.savefig( save_plot , format='svg' , dpi=1200 )
     else:
@@ -299,7 +285,6 @@ def main():
     # Get input arguments
     args = _get_args()
     print( '\nInput JSON history file: ', args.file_json )
-    print( '\nOutput path: ', args.path_out )
 
 
     # Get list of ground truth and probabilities
@@ -315,12 +300,10 @@ def main():
 
     # Plot ROC curves
     print( '\nPlot separate ROC curve ....' )
-    _plot_separate_roc_curves( trues , probs , n_arr , cmet , args.file_json , 
-                               path_out=args.path_out )
+    _plot_separate_roc_curves( trues , probs , n_arr , cmet , args.file_json )
 
     print( '\nPlot composite ROC curve ....' )
-    _plot_composite_roc_curve( trues , probs , n_arr , cmet , args.file_json ,
-                               path_out=args.path_out )
+    _plot_composite_roc_curve( trues , probs , n_arr , cmet , args.file_json )
 
     print( '\n\n' )
 

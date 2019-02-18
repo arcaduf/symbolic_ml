@@ -713,7 +713,10 @@ class SYML:
 
                
                 # Catboost pool for training
-                train_pool = Pool( x_train , y_train , cat_features=self._inds_feats_cat )
+                if self._feats_cat is None:
+                    train_pool = Pool( x_train , y_train )
+                else:
+                    train_pool = Pool( x_train , y_train , cat_features=self._inds_feats_cat )
 
 
                 # Get grid point parameters
@@ -740,7 +743,10 @@ class SYML:
  
                  
                 # Catboost pool for testing
-                test_pool = Pool( x_test , y_test , cat_features=self._inds_feats_cat )
+                if self._feats_cat is None:
+                    test_pool = Pool( x_test , y_test )
+                else:
+                    test_pool = Pool( x_test , y_test , cat_features=self._inds_feats_cat )
 
                
                 # Predict on testing data
@@ -893,7 +899,10 @@ class SYML:
         X = self._df[ self._feats ]
         Y = self._df[ self._col_out ]
 
-        data_pool = Pool( X , Y , cat_features = self._inds_feats_cat )
+        if self._feats_cat is None:
+            data_pool = Pool( X , Y )
+        else:
+            data_pool = Pool( X , Y , cat_features = self._inds_feats_cat )
 
         for i in range( len( models ) ):
             shaps = models[i].get_feature_importance( data_pool , fstr_type='ShapValues' )
